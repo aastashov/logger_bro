@@ -4,12 +4,12 @@ from typing import List
 import pyperclip
 from workdays import networkdays
 
-from clients import JiraClient, TogglClient
-from configs import settings
-from objects import TimeEntries
+from tracker.clients import JiraClient, TogglClient
+from tracker.configs import settings
+from tracker.structs import TimeEntity, TimeEntityDetail
 
 
-class WorkLogger:
+class TrackerBro:
     """ It's a proxy model for work with the toggl and jira apis """
 
     minute = 60 * 60
@@ -21,22 +21,25 @@ class WorkLogger:
     def make_stand_up(self):
         today = date.today()
         yesterday = today - timedelta(days=1)
-        time_entries = list(self.toggl.get_time_entries(
+        time_entity = list(self.toggl.get_time_entries(
             start=settings.date_to_quote(yesterday),
             end=settings.date_to_quote(today),
         ))
         stand_up = '@comedian\nYesterday\n'
-        for time_entry in time_entries:
+        for time_entry in time_entity:
             stand_up += f' - {time_entry.clean_description}\n'
         stand_up += 'Today\n - \nProblems\n - no'
         pyperclip.copy(stand_up)
         print('In clipboard!')
 
-    def get_time_entries(self, start: str, end: str) -> List[TimeEntries]:
+    def get_time_entries(self, start: str, end: str) -> List[TimeEntity]:
         return self.toggl.get_time_entries(start, end)
 
-    def create_work_logs(self, time_entries: List[TimeEntries]):
-        for time_entry in time_entries:
+    def get_detail_time_entries(self, start: str, end: str) -> List[TimeEntityDetail]:
+        return self.toggl.get_detail_time_entries(start, end)
+
+    def create_work_logs(self, time_entity: List[TimeEntityDetail]):
+        for time_entry in time_entity:
             work_log = self.jira.create_work_log(time_entry)
             print(f'{bool(work_log)} for log "{time_entry}"')
 
@@ -88,3 +91,6 @@ class WorkLogger:
             message += sep + key + str(value)
             sep = "\n"
         print(message)
+
+
+tracker_bro = TrackerBro()
