@@ -2,14 +2,6 @@ from tracker.configs import settings
 from tracker.helpers import tracker_bro
 
 
-# todo:
-#  - Добавить авторизацию более чем 1 Jira Server
-#  - получать Jira сервер с Toggl лога
-#  - авторизация в toggl и jira
-#  - проверка на ru текст
-#  - проверка на issue_key в toggle
-
-
 def execute_from_command_line():
     if settings.standup:
         tracker_bro.make_stand_up()
