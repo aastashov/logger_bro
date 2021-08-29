@@ -1,19 +1,35 @@
 from tracker.configs import settings
-from tracker.helpers import tracker_bro
+from tracker.helpers import cli_user, tracker_bro
+from tracker.http import toggl_client
+from tracker.tg_bot.tg_bot import TgBot
 
 
 def execute_from_command_line():
+    if settings.runbot:
+        TgBot().run_listener()
+        return
+
     if settings.standup:
-        tracker_bro.make_stand_up()
+        tracker_bro.make_stand_up(cli_user)
         return
 
     if settings.report:
-        tracker_bro.print_report(settings.HOURS_IN_MONTH, settings.RATE, settings.hours_in_day)
+        report = tracker_bro.get_report(cli_user, settings.hours_in_day)
+        print(report)
         return
 
     print(f"Start date: {settings.start}; end date: {settings.end}")
-    # time_entity = tracker_bro.get_time_entries(start=settings.quote_start, end=settings.quote_end)
-    time_entity = tracker_bro.get_detail_time_entries(start=settings.quote_start, end=settings.quote_end)
+    # time_entity = toggl_client.get_time_entries(
+    #     token=cli_user.toggl.token,
+    #     start=settings.quote_start,
+    #     end=settings.quote_end,
+    # )
+    time_entity = toggl_client.get_detail_time_entries(
+        token=cli_user.toggl.token,
+        pid=cli_user.toggl.project_id,
+        start=settings.quote_start,
+        end=settings.quote_end,
+    )
     for entry in time_entity:
         print(f"[{entry.issue_key}] ({entry.start_str}) duration: {entry.duration}; {entry.clean_description}")
 
@@ -24,4 +40,4 @@ def execute_from_command_line():
         print("Okay")
         return
 
-    tracker_bro.create_work_logs(time_entity)
+    tracker_bro.create_work_logs(cli_user, time_entity)

@@ -5,7 +5,7 @@ import requests
 from pydantic import parse_obj_as
 
 from tracker.configs import settings
-from tracker.structs import JiraWorkLog, TimeEntityDetail
+from tracker.structs import JiraWorkLog, TimeEntityDetail, User
 
 
 class JiraClient:

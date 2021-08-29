@@ -4,13 +4,10 @@ from pathlib import Path
 from urllib.parse import quote
 
 from dateutil.parser import parse
-from pydantic import BaseSettings
+from pydantic import BaseSettings, validator
 
 
 class Settings(BaseSettings):
-    BASE_DIR = Path(__file__).resolve().parent
-
-    TOGGL_URL: str = "https://api.track.toggl.com/api/v8"
     TOGGL_TOKEN: str
     TOGGL_PROJECT_ID: int = 0
 
@@ -30,9 +27,13 @@ class Settings(BaseSettings):
     HOURS_IN_MONTH: int = 120
     RATE: float = 10.0
 
+    TG_TOKEN: str
+    DB_FILE: Path = ""
+
     start: str = ""
     end: str = ""
     standup: bool = False
+    runbot: bool = False
     report: bool = False
     hours_in_day: int = 0
 
@@ -42,6 +43,7 @@ class Settings(BaseSettings):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         args = self.__get_args()
+        self.runbot = args.runbot
         self.start = args.start
         self.end = args.end
         self.standup = args.standup
@@ -52,13 +54,19 @@ class Settings(BaseSettings):
         self.quote_end = self.str_date_to_quote(self.end)
 
     class Config:
+        base_dir = Path(__file__).resolve().parent.parent
         env_file = ".env"
         env_file_encoding = "utf-8"
+
+    @validator("DB_FILE", pre=True, always=True)
+    def validator_db_file(cls, v):
+        return cls.Config.base_dir / (v or "database.json")
 
     def __get_args(self):
         date_start, date_end = self.previous_week_range(date.today())
 
         parser = argparse.ArgumentParser()
+        parser.add_argument("--runbot", help="Start Telegram bot", action="store_true")
         parser.add_argument(
             "--start", help="Start date. By default start last week", nargs="?", type=str, default=str(date_start),
         )

@@ -1,5 +1,6 @@
 import re
 from datetime import datetime, timedelta
+from typing import List, Optional
 
 import ujson
 from dateutil.parser import parse
@@ -102,3 +103,32 @@ class JiraWorkLog(BaseModel):
 
     def __str__(self):
         return f"{self.comment} (# {self.id})"
+
+
+class Client(BaseModel):
+    url: str
+    password: str = ""
+    username: str = ""
+    token: str = ""
+
+    class Config:
+        json_loads = ujson.loads
+
+
+class Toggl(BaseModel):
+    token: str = ""
+    project_id = int = 0
+
+    class Config:
+        json_loads = ujson.loads
+
+
+class User(BaseModel):
+    tid: int
+    rate: int = 5
+    total: int = 140
+    toggl: Optional[Toggl]
+    clients: List[Client] = []
+
+    class Config:
+        json_loads = ujson.loads

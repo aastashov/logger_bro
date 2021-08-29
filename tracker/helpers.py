@@ -4,9 +4,9 @@ from typing import List
 import pyperclip
 from workdays import networkdays
 
-from tracker.clients import JiraClient, TogglClient
 from tracker.configs import settings
-from tracker.structs import TimeEntity, TimeEntityDetail
+from tracker.http import jira_client, toggl_client
+from tracker.structs import Client, TimeEntityDetail, Toggl, User
 
 
 class TrackerBro:
@@ -14,14 +14,12 @@ class TrackerBro:
 
     minute = 60 * 60
 
-    def __init__(self):
-        self.toggl = TogglClient()
-        self.jira = JiraClient()
-
-    def make_stand_up(self):
+    @staticmethod
+    def make_stand_up(user: User):
         today = date.today()
         yesterday = today - timedelta(days=1)
-        time_entity = list(self.toggl.get_time_entries(
+        time_entity = list(toggl_client.get_time_entries(
+            token=user.toggl.token,
             start=settings.date_to_quote(yesterday),
             end=settings.date_to_quote(today),
         ))
@@ -32,15 +30,11 @@ class TrackerBro:
         pyperclip.copy(stand_up)
         print('In clipboard!')
 
-    def get_time_entries(self, start: str, end: str) -> List[TimeEntity]:
-        return self.toggl.get_time_entries(start, end)
-
-    def get_detail_time_entries(self, start: str, end: str) -> List[TimeEntityDetail]:
-        return self.toggl.get_detail_time_entries(start, end)
-
-    def create_work_logs(self, time_entity: List[TimeEntityDetail]):
+    @staticmethod
+    def create_work_logs(user: User, time_entity: List[TimeEntityDetail]):
+        client = jira_client()
         for time_entry in time_entity:
-            work_log = self.jira.create_work_log(time_entry)
+            work_log = client.create_work_log(time_entry)
             print(f'{bool(work_log)} for log "{time_entry}"')
 
     @staticmethod
@@ -55,7 +49,7 @@ class TrackerBro:
         logged_seconds = self._round_to_zero(duration % self.minute % 60)
         return ":".join(map(lambda x: str(x).zfill(2), [logged_hours, logged_minutes, logged_seconds]))
 
-    def print_report(self, hours_in_month: int, rate: float, hours_in_day: int):
+    def get_report(self, user: User, hours_in_day: int) -> str:
         first_date_in_current_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         last_date_in_current_month = first_date_in_current_month.replace(month=first_date_in_current_month.month + 1)
         last_date_in_current_month -= timedelta(seconds=1)
@@ -63,34 +57,58 @@ class TrackerBro:
         start = settings.date_to_quote(first_date_in_current_month)
         end = settings.date_to_quote(last_date_in_current_month)
 
-        logged_duration = sum((entry.duration for entry in self.get_time_entries(start=start, end=end)))
-        left_logged_seconds = hours_in_month * self.minute - logged_duration
+        entries = toggl_client.get_time_entries(token=user.toggl.token, start=start, end=end)
+        logged_duration = sum((entry.duration for entry in entries))
+        left_logged_seconds = user.total * self.minute - logged_duration
 
         lef_working_days = networkdays(datetime.now(), last_date_in_current_month)
 
-        amount = round(rate / self.minute * logged_duration, 2)
+        amount = round(user.rate / self.minute * logged_duration, 2)
 
         every_day = self._parse_to_str_time(left_logged_seconds / lef_working_days) if lef_working_days else "0"
         left_hours = self._parse_to_str_time(duration=left_logged_seconds)
 
         if hours_in_day != 0:
-            amount += round(rate * lef_working_days * hours_in_day, 2)
+            amount += round(user.rate * lef_working_days * hours_in_day, 2)
             every_day = self._parse_to_str_time(hours_in_day * self.minute)
 
         info = (
-            ("Total: ", f"{hours_in_month}h"),
+            ("Total: ", f"{user.total}h"),
             ("Logged: ", self._parse_to_str_time(duration=logged_duration)),
             ("Left hours: ", left_hours),
             ("Left working days: ", lef_working_days),
             ("Every day: ", every_day),
-            ("Rate: ", f"{rate}$"),
+            ("Rate: ", f"{user.rate}$"),
             ("Amount: ", f"{amount}$"),
         )
         message, sep = "", ""
         for key, value in info:
             message += sep + key + str(value)
             sep = "\n"
-        print(message)
+        return message
 
 
 tracker_bro = TrackerBro()
+cli_user = User(
+    tid=-1,
+    rate=settings.RATE,
+    total=settings.HOURS_IN_MONTH,
+    toggl=Toggl(
+        token=settings.TOGGL_TOKEN,
+        project_id=settings.TOGGL_PROJECT_ID,
+    ),
+    clients=[
+        Client(
+            url=settings.JIRA_URL_1,
+            password=settings.JIRA_PASS_1,
+            username=settings.JIRA_USER_1,
+            token=settings.JIRA_TOKEN_1,
+        ),
+        Client(
+            url=settings.JIRA_URL_2,
+            password=settings.JIRA_PASS_2,
+            username=settings.JIRA_USER_2,
+            token=settings.JIRA_TOKEN_2,
+        ),
+    ],
+)

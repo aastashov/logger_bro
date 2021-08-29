@@ -22,10 +22,10 @@ cp .env.example .env
 # Demo feature, shows how much you earn if you work 8 hours a day
 ./manage.py --report  --hours=8
 
-# Build a standup based on yesterday's logs
+# Build a stand-up based on yesterday's logs
 ./manage.py --standup
 
-# It'll transfer your vorlogs to JIRA.
+# It'll transfer your work logs to JIRA.
 ./manage.py --start=2021-08-09 --end=2021-08-15
 ```
 
