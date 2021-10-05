@@ -6,9 +6,15 @@ So far, the CLI tool for transferring my working hours from Toggl to Jira. It ca
 I will help you once if you create an issue with a suggestion or find a bug. Thanks :)
 
 ## Usages
+For starters, you need to get in the habit of keeping tracker_bro vorlogs in a usable state. He needs to know
+ which URL to send logs to and to which task. Here is an example of how to do it:
+
+![worklog example](docs/example_worklog.png)
+
+Here is the *DEV-123* task number and the server address *test.jira.com* that can be configured in the *clients*.
 
 ```shell
-mkvirtualenv tracker_bro --python=/Users/$HOME/.pyenv/versions/3.9.0rc1/bin/python
+mkvirtualenv tracker_bro --python=python3.9
 workon tracker_bro
 pip install -r requirements.txt
 

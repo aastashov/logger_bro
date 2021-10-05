@@ -32,9 +32,8 @@ class TrackerBro:
 
     @staticmethod
     def create_work_logs(user: User, time_entity: List[TimeEntityDetail]):
-        client = jira_client()
         for time_entry in time_entity:
-            work_log = client.create_work_log(time_entry)
+            work_log = jira_client.create_work_log(time_entry)
             print(f'{bool(work_log)} for log "{time_entry}"')
 
     @staticmethod

@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import ujson
 from dateutil.parser import parse
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Field, validator
 
 from tracker.configs import settings
 
@@ -128,7 +128,7 @@ class User(BaseModel):
     rate: int = 5
     total: int = 140
     toggl: Optional[Toggl]
-    clients: List[Client] = []
+    clients: List[Client] = Field(default_factory=list)  # todo: check
 
     class Config:
         json_loads = ujson.loads
