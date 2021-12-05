@@ -1,12 +1,12 @@
 from tracker.configs import settings
 from tracker.helpers import cli_user, tracker_bro
 from tracker.http import toggl_client
-from tracker.tg_bot.tg_bot import TgBot
+from tracker.tg_bot import start_bot
 
 
 def execute_from_command_line():
     if settings.runbot:
-        TgBot().run_listener()
+        start_bot()
         return
 
     if settings.standup:

@@ -1,11 +1,16 @@
+import asyncio
 import base64
-from typing import Optional
+from typing import TYPE_CHECKING
 
+import aiohttp
 import requests
 from pydantic import parse_obj_as
 
 from tracker.configs import settings
-from tracker.structs import JiraWorkLog, TimeEntityDetail, User
+from tracker.structs import JiraWorkLog, TimeEntityDetail
+
+if TYPE_CHECKING:  # pragma: no cover
+    from typing import List, Optional
 
 
 class JiraClient:
@@ -49,14 +54,11 @@ class JiraClient:
         self._domains[domain]["Authorization"] = f"Basic {base64.b64encode(u).decode()}"
         return True
 
-    def get_me(self, domain) -> dict:
-        resp = requests.get(self.session_url.format(domain), headers=self._domains[domain])
-        if resp.status_code != 200:
-            print(f'[jira.get_me] status_code: {resp.status_code}; context: {resp.content}')
-            return {}
-        return resp.json()
-
-    def create_work_log(self, time_entry: TimeEntityDetail) -> Optional[JiraWorkLog]:
+    async def _create_work_log(
+            self,
+            session: "aiohttp.ClientSession",
+            time_entry: "TimeEntityDetail",
+    ) -> "Optional[JiraWorkLog]":
         if time_entry.issue_key == "":
             print("[jira.create_work_log] issue_key not found in entry %s.", time_entry)
             return None
@@ -70,13 +72,22 @@ class JiraClient:
             return None
 
         target = self.issue_url.format(domain, time_entry.issue_key)
-        resp = requests.post(target, headers=headers, json={
+        _json = {
             "timeSpentSeconds": time_entry.duration,
             "comment": time_entry.clean_description,
             "started": time_entry.start_str,
-        })
+        }
+        async with session.post(url=target, headers=headers, json=_json) as resp:
+            work_log = await resp.json()
+            jira_log = parse_obj_as(JiraWorkLog, work_log)
+            print(f'{bool(jira_log)} for log "{time_entry}"')
+        return jira_log
 
-        if resp.status_code != 201:
-            print(f"[jira.create_work_log] {resp.status_code=}; {resp.content=}")
-            return None
-        return parse_obj_as(JiraWorkLog, resp.json())
+    async def _async_create_work_logs(self, time_entries: "List[TimeEntityDetail]"):
+        async with aiohttp.ClientSession() as session:
+            tasks = [asyncio.ensure_future(self._create_work_log(session, i)) for i in time_entries]
+            result = await asyncio.gather(*tasks)
+        return result
+
+    def async_create_work_logs(self, time_entries: "List[TimeEntityDetail]"):
+        asyncio.run(self._async_create_work_logs(time_entries))

@@ -1,10 +1,9 @@
 import argparse
 from datetime import date, timedelta
-from pathlib import Path
 from urllib.parse import quote
 
 from dateutil.parser import parse
-from pydantic import BaseSettings, validator
+from pydantic import BaseSettings, PostgresDsn
 
 
 class Settings(BaseSettings):
@@ -28,7 +27,7 @@ class Settings(BaseSettings):
     RATE: float = 10.0
 
     TG_TOKEN: str
-    DB_FILE: Path = ""
+    DATABASE: PostgresDsn = "postgresql://postgres:pass1234@127.0.0.1:5432/tracker_bro"
 
     start: str = ""
     end: str = ""
@@ -54,13 +53,8 @@ class Settings(BaseSettings):
         self.quote_end = self.str_date_to_quote(self.end)
 
     class Config:
-        base_dir = Path(__file__).resolve().parent.parent
         env_file = ".env"
         env_file_encoding = "utf-8"
-
-    @validator("DB_FILE", pre=True, always=True)
-    def validator_db_file(cls, v):
-        return cls.Config.base_dir / (v or "database.json")
 
     def __get_args(self):
         date_start, date_end = self.previous_week_range(date.today())
