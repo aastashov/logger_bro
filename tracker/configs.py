@@ -1,15 +1,17 @@
 import argparse
 from datetime import date, timedelta
-from urllib.parse import quote
 
-from dateutil.parser import parse
 from pydantic import BaseSettings, PostgresDsn
+
+from tracker.utils import str_date_to_quote
 
 
 class Settings(BaseSettings):
+    # todo: need to delete
     TOGGL_TOKEN: str
     TOGGL_PROJECT_ID: int = 0
 
+    # todo: need to delete
     JIRA_URL_1: str  # example https://jira.example.comJIRA_TOKE_2
     JIRA_PASS_1: str = ""
     JIRA_USER_1: str = ""
@@ -27,7 +29,7 @@ class Settings(BaseSettings):
     RATE: float = 10.0
 
     TG_TOKEN: str
-    DATABASE: PostgresDsn = "postgresql://postgres:pass1234@127.0.0.1:5432/tracker_bro"
+    DATABASE: str = "postgresql+asyncpg://postgres:pass1234@127.0.0.1:5432/tracker_bro"
 
     start: str = ""
     end: str = ""
@@ -49,8 +51,8 @@ class Settings(BaseSettings):
         self.report = args.report
         self.hours_in_day = args.hours
 
-        self.quote_start = self.str_date_to_quote(self.start)
-        self.quote_end = self.str_date_to_quote(self.end)
+        self.quote_start = str_date_to_quote(self.start)
+        self.quote_end = str_date_to_quote(self.end)
 
     class Config:
         env_file = ".env"
@@ -83,14 +85,6 @@ class Settings(BaseSettings):
         start_date = incoming_date + timedelta(-incoming_date.weekday(), weeks=-1)
         end_date = incoming_date + timedelta(-incoming_date.weekday() - 1)
         return start_date, end_date
-
-    @classmethod
-    def str_date_to_quote(cls, incoming: str) -> str:
-        return cls.date_to_quote(parse(incoming))
-
-    @classmethod
-    def date_to_quote(cls, incoming: date):
-        return quote(incoming.strftime("%Y-%m-%dT%H:%M:%S+06:00"))
 
 
 settings = Settings()

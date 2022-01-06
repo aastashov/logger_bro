@@ -10,7 +10,7 @@ from tracker.configs import settings
 from tracker.structs import JiraWorkLog, TimeEntityDetail
 
 if TYPE_CHECKING:  # pragma: no cover
-    from typing import List, Optional
+    from typing import Optional
 
 
 class JiraClient:
@@ -35,24 +35,22 @@ class JiraClient:
         self.auth_by_token(settings.JIRA_URL_2)
         self.auth_by_pass(settings.JIRA_URL_1)
 
-    def auth_by_pass(self, domain) -> bool:
+    def auth_by_pass(self, domain: str):
         resp = requests.post(self.session_url.format(domain), json={
             "username": settings.JIRA_USER_1,
             "password": settings.JIRA_PASS_1,
         })
         if resp.status_code != 200:
             print(resp.status_code, resp.content)
-            return False
-        session = resp.json()["session"]
+            return
 
         # todo: save authentication
+        session = resp.json()["session"]
         self._domains[domain]['Cookie'] = f'{session["name"]}={session["value"]}'
-        return True
 
-    def auth_by_token(self, domain) -> bool:
+    def auth_by_token(self, domain: str):
         u = f"{settings.JIRA_USER_2}:{settings.JIRA_TOKEN_2}".encode()
         self._domains[domain]["Authorization"] = f"Basic {base64.b64encode(u).decode()}"
-        return True
 
     async def _create_work_log(
             self,
@@ -83,11 +81,11 @@ class JiraClient:
             print(f'{bool(jira_log)} for log "{time_entry}"')
         return jira_log
 
-    async def _async_create_work_logs(self, time_entries: "List[TimeEntityDetail]"):
+    async def _async_create_work_logs(self, time_entries: list["TimeEntityDetail"]):
         async with aiohttp.ClientSession() as session:
             tasks = [asyncio.ensure_future(self._create_work_log(session, i)) for i in time_entries]
             result = await asyncio.gather(*tasks)
         return result
 
-    def async_create_work_logs(self, time_entries: "List[TimeEntityDetail]"):
+    def async_create_work_logs(self, time_entries: list["TimeEntityDetail"]):
         asyncio.run(self._async_create_work_logs(time_entries))

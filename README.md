@@ -45,3 +45,6 @@ cp .env.example .env
 - Добавить тесты + больше документации
 - Проверка на ru текст
 - Проверка на issue_key в toggle
+
+- https://docs.sqlalchemy.org/en/14/orm/extensions/asyncio.html#synopsis-orm
+- https://surik00.gitbooks.io/aiogram-lessons/content/chapter5.html
