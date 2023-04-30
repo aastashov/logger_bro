@@ -14,7 +14,7 @@ from .configs import settings
 class TimeEntity(BaseModel):
     at: Optional[datetime] = None
     billable: bool
-    description: str
+    description: str = ""
     duration: int
     duronly: bool
     guid: str
@@ -33,15 +33,15 @@ class TimeEntity(BaseModel):
 
     @validator("at", "start", "stop", pre=True, always=True)
     def validator_datetime(cls, v):
-        return parse(v).replace(second=0)
+        return v and parse(v).replace(second=0)
 
     @validator("issue_key", pre=True, always=True)
     def validator_issue_key(cls, v, values, **kwargs):
-        return res[0] if (res := re.findall(settings.issue_regex, values["description"])) else ""
+        return res[0] if (res := re.findall(settings.issue_regex, values.get("description", ""))) else ""
 
     @validator("clean_description", pre=True, always=True)
     def validator_clean_description(cls, v, values, **kwargs):
-        return values["description"][len(key) + 1 :] if (key := values["issue_key"]) else values["description"]
+        return values["description"][len(key) + 1:] if (key := values["issue_key"]) else values.get("description", "")
 
     @validator("start_str", pre=True, always=True)
     def validator_start_str(cls, v, values, **kwargs):
@@ -49,7 +49,7 @@ class TimeEntity(BaseModel):
 
 
 class TimeEntityDetail(BaseModel):
-    description: str  # " DEV-3448 Discussed the task with Vova and Kylych"
+    description: str = ""  # "DEV-3448 Discussed the task with Vova and Kylych"
     start: Optional[datetime] = None  # "2021-01-20T13:20:39+06:00"
     end: Optional[datetime] = None  # "2021-01-20T13:50:39+06:00"
     dur: int = 0  # 1800000
@@ -76,7 +76,7 @@ class TimeEntityDetail(BaseModel):
 
     @validator("clean_description", pre=True, always=True)
     def validator_clean_description(cls, v, values, **kwargs):
-        return values["description"][len(key) + 1 :] if (key := values["issue_key"]) else values["description"]
+        return values["description"][len(key) + 1:] if (key := values["issue_key"]) else values["description"]
 
     @validator("duration", pre=True, always=True)
     def validator_duration(cls, v, values, **kwargs):
@@ -90,6 +90,10 @@ class TimeEntityDetail(BaseModel):
     @validator("start_str", pre=True, always=True)
     def validator_start_str(cls, v, values, **kwargs):
         return values["start"].strftime("%Y-%m-%dT%H:%M:00.000+0000")  # '2020-09-25T05:04:02.280+0000'
+
+    @property
+    def issue_link(self) -> str:
+        return f"https://{self.client}/brows/{self.issue_key}"
 
     def __str__(self):
         return f"{self.description} ({self.start_str})"

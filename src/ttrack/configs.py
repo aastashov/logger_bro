@@ -1,8 +1,9 @@
 import argparse
 import json
+import sys
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from urllib.parse import quote
 
 from dateutil.parser import parse
@@ -42,26 +43,21 @@ class Settings(BaseSettings):
     jira_clients: List[Jira] = Field(default_factory=list)
 
     issue_regex: str = r"^\S{0,5}-\d+"
+    ru_regex: str = r"[а-яА-Я]"
 
     start: str = ""
     end: str = ""
-    standup: bool = False
-    version: bool = False
-    report: bool = False
-    hours_in_day: int = 0
 
     quote_start: str = ""
     quote_end: str = ""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # if {"version", "init", "config", "report", "sync", "standup"} ^ set(sys.argv):
+        #     return
         args = self.__get_args()
         self.start = args.start
         self.end = args.end
-        self.standup = args.standup
-        self.report = args.report
-        self.version = args.version
-        self.hours_in_day = args.hours
 
         self.quote_start = str_date_to_quote(self.start)
         self.quote_end = str_date_to_quote(self.end)
@@ -88,11 +84,6 @@ class Settings(BaseSettings):
 
         parser = argparse.ArgumentParser()
         parser.add_argument(
-            "--version",
-            help="Show version of package",
-            action="store_true",
-        )
-        parser.add_argument(
             "--start",
             help="Start date. By default start last week",
             nargs="?",
@@ -105,23 +96,6 @@ class Settings(BaseSettings):
             nargs="?",
             type=str,
             default=str(date_end),
-        )
-        parser.add_argument(
-            "--standup",
-            help="Shows yesterday's worklogs and creates drafts of the standup.",
-            action="store_true",
-        )
-        parser.add_argument(
-            "--report",
-            help="Shows how much more work is to be done in the current month.",
-            action="store_true",
-        )
-        parser.add_argument(
-            "--hours",
-            help="Number of hours per day that you can work.",
-            nargs="?",
-            type=int,
-            default=0,
         )
         return parser.parse_args()
 
