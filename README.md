@@ -14,34 +14,30 @@ For starters, you need to get in the habit of keeping tracker_bro vorlogs in a u
 Here is the *DEV-123* task number and the server address *test.jira.com* that can be configured in the *clients*.
 
 ```shell
-mkvirtualenv tracker_bro --python=python3.9
-workon tracker_bro
-pip install -r requirements.txt
+make install
+```
 
+### Usages
 
-cp .env.example .env
-# and change .env
-
+```shell
 # Build report for current month
-./manage.py --report
+ttrack --report
 
 # Demo feature, shows how much you earn if you work 8 hours a day
-./manage.py --report  --hours=8
+ttrack --report --hours=8
 
 # Build a stand-up based on yesterday's logs
-./manage.py --standup
+ttrack --standup
 
 # It'll transfer your work logs to JIRA.
-./manage.py --start=2021-08-09 --end=2021-08-15
+ttrack --start=2021-08-09 --end=2021-08-15
 ```
 
 
 ## TODO:
-- Add Telegram bot ...
 - Save Cookie after login by password
 - Починить стендап за пятницу
-- Добавить что-то типа pipenv
-- Добавить tox
 - Добавить тесты + больше документации
 - Проверка на ru текст
 - Проверка на issue_key в toggle
+- Добавить `ttrack init` команду для создания файла конфигурации
