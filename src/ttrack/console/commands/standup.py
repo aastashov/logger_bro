@@ -16,8 +16,8 @@ class StandupCommand(BaseCommand):
 
         yesterday = date.today() - timedelta(days=1)
 
-        toggl_token = self.config.get("toggl.token")
-        toggl_project_id = self.config.get("toggl.project_id")
+        toggl_token = self.config.toggl.token
+        toggl_project_id = self.config.toggl.project_id
         toggl_client = TogglClient(token=toggl_token, project_id=toggl_project_id)
 
         time_entries = toggl_client.get_detail_time_entries(

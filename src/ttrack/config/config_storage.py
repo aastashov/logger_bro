@@ -1,19 +1,19 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from pathlib import Path
+from typing import Any, Self
 
-from ttrack.config.types import FlatConfigType
+from ttrack.config.entity import UserConfig
 
 
 class ConfigStorage(ABC):
 
+    def __init__(self: Self, config_path: Path) -> None:
+        self.config_path = config_path
+
     @abstractmethod
-    def read_properties(self) -> FlatConfigType:
+    def read_properties(self: Self) -> dict[str, Any]:
         raise NotImplementedError
 
     @abstractmethod
-    def add_property(self, name: str, value: Any) -> FlatConfigType:
-        raise NotImplementedError
-
-    @abstractmethod
-    def remove_property(self, name: str) -> FlatConfigType:
+    def flush(self: Self, user_config: UserConfig) -> None:
         raise NotImplementedError

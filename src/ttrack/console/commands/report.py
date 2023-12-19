@@ -33,22 +33,22 @@ class ReportCommand(BaseCommand):
         start = self.date_to_quote(first_date)
         end = self.date_to_quote(last_date)
 
-        toggl_token = self.config.get("toggl.token")
-        toggl_project_id = self.config.get("toggl.project_id")
+        toggl_token = self.config.toggl.token
+        toggl_project_id = self.config.toggl.project_id
         toggl_client = TogglClient(token=toggl_token, project_id=toggl_project_id)
 
         # TODO: Need to change to get_detail_time_entries and check
         entries = toggl_client.get_time_entries(start=start, end=end)
         logged_duration = sum((entry.duration for entry in entries if entry.stop))
 
-        hours_in_month = self.config.get("report.hours_in_month")
+        hours_in_month = self.config.report.hours_in_month
         left_logged_seconds = hours_in_month * self.minute - logged_duration
 
         # I assume that the user starts his work day after 6AM and finishes before 6PM
         today = datetime.now() + timedelta(hours=6)
         lef_working_days = networkdays(today, last_date)
 
-        rate = self.config.get("report.rate")
+        rate = self.config.report.rate
         amount = round(rate / self.minute * logged_duration, 2)
 
         every_day = self._parse_to_str_time(left_logged_seconds / lef_working_days) if lef_working_days else "0"

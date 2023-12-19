@@ -9,7 +9,7 @@ import aiohttp
 import requests
 from pydantic import parse_obj_as
 
-from .configs import Jira, settings
+from .config.entity import JiraConfig
 from .structs import JiraWorkLog, TimeEntity, TimeEntityDetail
 
 
@@ -20,7 +20,7 @@ class JiraClient:
     https://developer.atlassian.com/cloud/jira/platform/rest/v2/api-group-issue-worklogs/
     """
 
-    jira_clients: list[Jira]
+    jira_clients: list[JiraConfig]
     _domains: dict = field(default_factory=dict)
 
     session_url = "{}/rest/auth/1/session"
@@ -33,7 +33,7 @@ class JiraClient:
             elif client.token:
                 self.auth_by_token(client)
 
-    def auth_by_pass(self, client: Jira) -> None:
+    def auth_by_pass(self, client: JiraConfig) -> None:
         url = self.session_url.format(client.url)
         resp = requests.post(url, json={"username": client.username, "password": client.password})
         if resp.status_code != 200:
@@ -47,7 +47,7 @@ class JiraClient:
             "Cookie": f'{session["name"]}={session["value"]}',
         }
 
-    def auth_by_token(self, client: Jira) -> None:
+    def auth_by_token(self, client: JiraConfig) -> None:
         u = f"{client.username}:{client.token}".encode()
         self._domains[client.url] = {
             "Content-Type": "application/json",
@@ -61,15 +61,15 @@ class JiraClient:
         time_entry: TimeEntityDetail,
     ) -> JiraWorkLog | None:
         if time_entry.issue_key == "":
-            print("[jira.create_work_log] issue_key not found in entry %s.", time_entry)
+            print("[create_work_log] issue_key not found in entry %s.", time_entry)
             return None
 
         if not time_entry.client:
-            print("[jira.create_work_log] client not found in entry %s.", time_entry)
+            print("[create_work_log] client not found in entry %s.", time_entry)
             return None
 
         domain, headers = "", {}
-        for client in settings.jira_clients:
+        for client in self.jira_clients:
             if time_entry.client in client.url:
                 domain, headers = client.url, self._domains[client.url]
 

@@ -1,12 +1,12 @@
-from datetime import date
-from urllib.parse import quote
+class Singleton:
+    def __new__(cls, *args, **kwargs):
+        it = getattr(cls, "__it__", None)
+        if it is not None:
+            return it
 
-from dateutil.parser import parse
+        cls.__it__ = it = object.__new__(cls)
+        it._init(*args, **kwargs)
+        return it
 
-
-def str_date_to_quote(incoming: str) -> str:
-    return date_to_quote(parse(incoming))
-
-
-def date_to_quote(incoming: date):
-    return quote(incoming.strftime("%Y-%m-%dT%H:%M:%S+06:00"))
+    def _init(self, *args, **kwargs):
+        pass

@@ -1,18 +1,15 @@
 from __future__ import annotations
 
 import enum
+import re
+from datetime import datetime, timedelta
 
 from cleo.helpers import argument
 
 from ttrack.console.commands.command import BaseCommand
 from ttrack.resources import JiraClient, TogglClient
 from ttrack.structs import TimeEntityDetail
-import enum
-import re
-from datetime import datetime, timedelta
 
-from ttrack.configs import settings
-from ttrack.structs import TimeEntityDetail
 
 class LogValidationError(enum.Enum):
     ISSUE_KEY = "The issue key not found. Should be like DEV-123"
@@ -48,7 +45,7 @@ class SyncCommand(BaseCommand):
             elif not log_entity.clean_description:
                 formatted_log = self._format_error_log(log_entity, LogValidationError.DESCRIPTION)
                 has_incorrect_logs = True
-            elif re.findall(settings.ru_regex, log_entity.description):
+            elif re.findall(self.config.validator.ru_text_regex, log_entity.description):
                 formatted_log = self._format_error_log(log_entity, LogValidationError.RU_DESCRIPTION)
                 has_incorrect_logs = True
             elif not log_entity.client:
@@ -68,15 +65,17 @@ class SyncCommand(BaseCommand):
         return True
 
     def handle(self) -> int:
-        toggl_token = self.config.get("toggl.token")
-        toggl_project_id = self.config.get("toggl.project_id")
+        toggl_token = self.config.toggl.token
+        toggl_project_id = self.config.toggl.project_id
         toggl_client = TogglClient(token=toggl_token, project_id=toggl_project_id)
 
-        jira_clients = self.config.get("jira", [])
+        jira_clients = self.config.jira
         jira_client = JiraClient(jira_clients=jira_clients)
 
         start_day = self.argument("start")
         end_day = self.argument("end")
+        # TODO: Need to add validator for start_day and end_day
+
         self.info(f"Start date: {start_day}; end date: {end_day}")
         time_entities = toggl_client.get_detail_time_entries(start=start_day, end=end_day)
 

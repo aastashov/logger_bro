@@ -10,18 +10,13 @@ from ttrack.config.config import Config
 
 if TYPE_CHECKING:
     from typing import Any
-    from ttrack.config.types import ConfigLiteral
     from datetime import date
 
 
 class BaseCommand(Command):
-    _config: Config | None = None
-
     @property
     def config(self) -> Config:
-        if self._config is None:
-            self._config = Config.create()
-        return self._config
+        return Config()
 
     def str_date_to_quote(self, incoming: str) -> str:
         return self.date_to_quote(parse(incoming))
@@ -42,6 +37,6 @@ class BaseConfigCommand(BaseCommand):
         value = f"<fg={fg}>{value}</> (default)" if is_default else f"<fg={fg}>{value}</>"
         return f"<fg=cyan>{property_name}</> = {value}"
 
-    def display_config_list(self, status_of_config: dict[ConfigLiteral, tuple[Any, bool]]):
+    def display_config_list(self, status_of_config: dict[str, tuple[Any, bool]]):
         for property_name, (value, is_default) in status_of_config.items():
             self.line(self.get_config_display_message(property_name, value, is_default))

@@ -1,26 +1,25 @@
 from __future__ import annotations
 
-import json
 import re
 from datetime import datetime, timedelta
 from typing import Optional
 
 from dateutil.parser import parse
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Field, validator
 
-from .configs import settings
+from .config.config import Config
 
 
 class TimeEntity(BaseModel):
-    at: Optional[datetime] = None
+    at: datetime | None = None
     billable: bool
     description: str = ""
     duration: int
     duronly: bool
     guid: str
-    id: int
-    start: Optional[datetime] = None
-    stop: Optional[datetime] = None
+    id: int = Field(alias="id")
+    start: datetime | None = None
+    stop: datetime | None = None
     uid: int
     wid: int
 
@@ -28,16 +27,14 @@ class TimeEntity(BaseModel):
     issue_key: str = ""
     clean_description: str = ""
 
-    class Config:
-        json_loads = json.loads
-
     @validator("at", "start", "stop", pre=True, always=True)
     def validator_datetime(cls, v):
         return v and parse(v).replace(second=0)
 
     @validator("issue_key", pre=True, always=True)
     def validator_issue_key(cls, v, values, **kwargs):
-        return res[0] if (res := re.findall(settings.issue_regex, values.get("description", ""))) else ""
+        config = Config()
+        return res[0] if (res := re.findall(config.validator.issue_regex, values.get("description", ""))) else ""
 
     @validator("clean_description", pre=True, always=True)
     def validator_clean_description(cls, v, values, **kwargs):
@@ -62,9 +59,6 @@ class TimeEntityDetail(BaseModel):
     issue_key: str = ""
     clean_description: str = ""
 
-    class Config:
-        json_loads = json.loads
-
     @validator("start", "end", pre=True, always=True)
     def validator_datetime(cls, v):
         # From /details api start and returns in user time (utc+6)
@@ -72,7 +66,8 @@ class TimeEntityDetail(BaseModel):
 
     @validator("issue_key", pre=True, always=True)
     def validator_issue_key(cls, v, values, **kwargs):
-        return res[0] if (res := re.findall(settings.issue_regex, values["description"])) else ""
+        config = Config()
+        return res[0] if (res := re.findall(config.validator.issue_regex, values["description"])) else ""
 
     @validator("clean_description", pre=True, always=True)
     def validator_clean_description(cls, v, values, **kwargs):
@@ -103,9 +98,6 @@ class JiraWorkLog(BaseModel):
     id: int
     self: str
     comment: str
-
-    class Config:
-        json_loads = json.loads
 
     def __str__(self):
         return f"{self.comment} (# {self.id})"
